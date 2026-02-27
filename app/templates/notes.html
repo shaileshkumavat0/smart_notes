@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="notes-container">
+    <!-- Header with Stats -->
+    <div class="notes-header">
+        <div>
+            <h2><i class="fas fa-notes-medical"></i> My Notes</h2>
+            {% if username %}
+            <p class="notes-subtitle">Hi, <strong>{{ username }}</strong> – stay organised and creative ✨</p>
+            {% endif %}
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <div class="notes-stats d-none d-md-flex">
+                <span class="stat-pill">
+                    <i class="fas fa-layer-group"></i> {{ total_notes }} total
+                </span>
+                <span class="stat-pill">
+                    <i class="fas fa-thumbtack"></i> {{ pinned_count }} pinned
+                </span>
+            </div>
+            <a href="/logout" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <!-- View toggle & Sort -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div class="btn-group view-toggle" role="group" aria-label="View toggle">
+            <a href="{{ url_for('main.notes', view='active', tag=active_tag, sort=sort, search=search_query) }}"
+               class="btn btn-sm {% if view == 'active' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Active ({{ active_count }})
+            </a>
+            <a href="{{ url_for('main.notes', view='archived', tag=active_tag, sort=sort, search=search_query) }}"
+               class="btn btn-sm {% if view == 'archived' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                Archived ({{ archived_count }})
+            </a>
+            <a href="{{ url_for('main.notes', view='all', tag=active_tag, sort=sort, search=search_query) }}"
+               class="btn btn-sm {% if view == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                All
+            </a>
+        </div>
+
+        <form method="GET" action="{{ url_for('main.notes') }}" class="d-flex align-items-center gap-2 sort-form">
+            <input type="hidden" name="search" value="{{ search_query }}">
+            <input type="hidden" name="tag" value="{{ active_tag }}">
+            <input type="hidden" name="view" value="{{ view }}">
+            <label for="sortSelect" class="me-1 text-muted small">Sort:</label>
+            <select id="sortSelect" name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="new" {% if sort == 'new' %}selected{% endif %}>Newest first</option>
+                <option value="old" {% if sort == 'old' %}selected{% endif %}>Oldest first</option>
+                <option value="az" {% if sort == 'az' %}selected{% endif %}>A → Z</option>
+            </select>
+        </form>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <form method="GET" action="/notes" class="search-form">
+            <input type="hidden" name="tag" value="{{ active_tag }}">
+            <input type="hidden" name="sort" value="{{ sort }}">
+            <input type="hidden" name="view" value="{{ view }}">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Search notes..." 
+                       value="{{ search_query }}"
+                       id="searchInput">
+                {% if search_query %}
+                <a href="/notes" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Tag Filters -->
+    <div class="notes-filters mb-3">
+        <span class="filter-label"><i class="fas fa-filter"></i> Filter by tag:</span>
+        <div class="tag-chips">
+            <a href="{{ url_for('main.notes', tag='all', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip {% if active_tag == 'all' %}active{% endif %}">
+                All ({{ active_count }})
+            </a>
+            <a href="{{ url_for('main.notes', tag='general', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip tag-general {% if active_tag == 'general' %}active{% endif %}">
+                📌 General ({{ tags_summary.general }})
+            </a>
+            <a href="{{ url_for('main.notes', tag='work', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip tag-work {% if active_tag == 'work' %}active{% endif %}">
+                💼 Work ({{ tags_summary.work }})
+            </a>
+            <a href="{{ url_for('main.notes', tag='personal', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip tag-personal {% if active_tag == 'personal' %}active{% endif %}">
+                🏠 Personal ({{ tags_summary.personal }})
+            </a>
+            <a href="{{ url_for('main.notes', tag='ideas', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip tag-ideas {% if active_tag == 'ideas' %}active{% endif %}">
+                💡 Ideas ({{ tags_summary.ideas }})
+            </a>
+            <a href="{{ url_for('main.notes', tag='important', sort=sort, view=view, search=search_query) }}"
+               class="tag-chip tag-important {% if active_tag == 'important' %}active{% endif %}">
+                ⭐ Important ({{ tags_summary.important }})
+            </a>
+        </div>
+    </div>
+
+    <!-- Add Note Form -->
+    <div class="add-note-card">
+        <form method="POST" class="add-note-form">
+            <div class="row">
+                <div class="col-md-8">
+                    <textarea name="content" class="form-control" 
+                              placeholder="Write your note..." 
+                              rows="2" required></textarea>
+                </div>
+                <div class="col-md-3">
+                    <select name="tag" class="form-select">
+                        <option value="general">📌 General</option>
+                        <option value="work">💼 Work</option>
+                        <option value="personal">🏠 Personal</option>
+                        <option value="ideas">💡 Ideas</option>
+                        <option value="important">⭐ Important</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Notes List -->
+    <div class="notes-list">
+        {% if notes %}
+            {% for note in notes %}
+            <div class="note-card {% if note.pinned %}pinned{% endif %} {% if note.get('archived') %}archived{% endif %} tag-{{ note.get('tag', 'general') }}">
+                <div class="note-header">
+                    <span class="note-tag tag-{{ note.get('tag', 'general') }}">
+                        {% if note.get('tag') == 'work' %}💼 Work
+                        {% elif note.get('tag') == 'personal' %}🏠 Personal
+                        {% elif note.get('tag') == 'ideas' %}💡 Ideas
+                        {% elif note.get('tag') == 'important' %}⭐ Important
+                        {% else %}📌 General{% endif %}
+                    </span>
+                    <div class="note-header-badges">
+                        {% if note.pinned %}
+                        <span class="pin-badge"><i class="fas fa-thumbtack"></i> Pinned</span>
+                        {% endif %}
+                        {% if note.get('archived') %}
+                        <span class="archive-badge"><i class="fas fa-box-archive"></i> Archived</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="note-content">
+                    {{ note.content }}
+                </div>
+                
+                <div class="note-footer">
+                    <small class="note-timestamp">
+                        <i class="far fa-clock"></i> 
+                        {% if note.get('updated_at') %}
+                            Updated: {{ note.updated_at.strftime('%b %d, %Y %H:%M') }}
+                        {% else %}
+                            Created: {{ note.created_at.strftime('%b %d, %Y %H:%M') }}
+                        {% endif %}
+                    </small>
+                    
+                    <div class="note-actions">
+                        <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" 
+                                data-note-content="{{ note.content | e }}" title="Copy">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <a href="/pin/{{ note._id }}" class="btn btn-sm {% if note.pinned %}btn-warning{% else %}btn-outline-secondary{% endif %}" 
+                           title="{% if note.pinned %}Unpin{% else %}Pin{% endif %}">
+                            <i class="fas fa-thumbtack"></i>
+                        </a>
+                        <a href="/archive/{{ note._id }}" class="btn btn-sm btn-outline-secondary" 
+                           title="{% if note.get('archived') %}Restore{% else %}Archive{% endif %}">
+                            <i class="fas fa-box-archive"></i>
+                        </a>
+                        <a href="/edit/{{ note._id }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="/delete/{{ note._id }}" class="btn btn-sm btn-outline-danger" 
+                           title="Delete" onclick="return confirm('Delete this note?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-sticky-note"></i>
+                <h3>No notes yet!</h3>
+                <p>Create your first note above 👆</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Live Search Script -->
+<script>
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            if (this.value.length > 0) {
+                // Auto-submit search after 500ms
+                this.form.submit();
+            }
+        }, 500);
+    });
+
+    // Copy note content
+    document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const content = btn.getAttribute('data-note-content') || '';
+            try {
+                await navigator.clipboard.writeText(content);
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                    btn.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 1200);
+            } catch (e) {
+                alert('Unable to copy note, please copy manually.');
+            }
+        });
+    });
+</script>
+{% endblock %}

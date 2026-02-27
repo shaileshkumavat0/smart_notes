@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="edit-note-container">
+    <a href="/notes" class="d-inline-flex align-items-center mb-3">
+        <i class="fas fa-arrow-left me-2"></i> Back to Notes
+    </a>
+
+    <h2><i class="fas fa-edit"></i> Edit Note</h2>
+
+    <form method="POST" class="mt-3">
+        <div class="mb-3">
+            <label for="content" class="form-label">Note Content</label>
+            <textarea 
+                name="content" 
+                id="content" 
+                class="form-control" 
+                rows="5" 
+                required>{{ note.content }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="tag" class="form-label">Category</label>
+            <select name="tag" id="tag" class="form-select">
+                <option value="general" {% if note.get('tag', 'general') == 'general' %}selected{% endif %}>📌 General</option>
+                <option value="work" {% if note.get('tag') == 'work' %}selected{% endif %}>💼 Work</option>
+                <option value="personal" {% if note.get('tag') == 'personal' %}selected{% endif %}>🏠 Personal</option>
+                <option value="ideas" {% if note.get('tag') == 'ideas' %}selected{% endif %}>💡 Ideas</option>
+                <option value="important" {% if note.get('tag') == 'important' %}selected{% endif %}>⭐ Important</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Update Note
+        </button>
+    </form>
+</div>
+{% endblock %}

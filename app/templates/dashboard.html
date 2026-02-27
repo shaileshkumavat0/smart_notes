@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <div>
+            <h2><i class="fas fa-chart-line"></i> Notes Analytics</h2>
+            <p class="dashboard-subtitle">
+                Hi, <strong>{{ username }}</strong>. Here's how your Smart Notes database is doing.
+            </p>
+        </div>
+    </div>
+
+    <!-- Top stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <span class="stat-label">Total notes</span>
+                <span class="stat-value">{{ total_notes }}</span>
+                <span class="stat-icon primary"><i class="fas fa-layer-group"></i></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <span class="stat-label">Active</span>
+                <span class="stat-value">{{ active_notes }}</span>
+                <span class="stat-icon success"><i class="fas fa-play-circle"></i></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <span class="stat-label">Pinned</span>
+                <span class="stat-value">{{ pinned_notes }}</span>
+                <span class="stat-icon warning"><i class="fas fa-thumbtack"></i></span>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="stat-card">
+                <span class="stat-label">Archived</span>
+                <span class="stat-value">{{ archived_notes }}</span>
+                <span class="stat-icon muted"><i class="fas fa-box-archive"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Activity chart -->
+        <div class="col-md-8">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h5><i class="fas fa-calendar-week"></i> Last 7 days activity</h5>
+                    <span class="chart-subtitle">Notes created per day</span>
+                </div>
+                <canvas id="notesByDayChart" height="140"></canvas>
+            </div>
+        </div>
+
+        <!-- Tag distribution -->
+        <div class="col-md-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h5><i class="fas fa-tags"></i> Tags distribution</h5>
+                    <span class="chart-subtitle">How your notes are categorised</span>
+                </div>
+                <canvas id="tagsChart" height="220"></canvas>
+
+                <ul class="tag-summary-list">
+                    {% for key, count in tag_counts.items() %}
+                    <li>
+                        <span class="dot dot-{{ key }}"></span>
+                        <span class="tag-name">{{ key.capitalize() }}</span>
+                        <span class="tag-count">{{ count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Smart insights -->
+    <div class="row g-4 mt-1">
+        <div class="col-md-6">
+            <div class="insight-card">
+                <h5><i class="fas fa-lightbulb"></i> Smart insight</h5>
+                {% if total_notes == 0 %}
+                    <p>You don't have any notes yet. Start writing and this area will show interesting patterns from your database.</p>
+                {% else %}
+                    {% if favourite_tag %}
+                        <p>
+                            You write the most in the 
+                            <strong>
+                                {% if favourite_tag == 'work' %}💼 Work
+                                {% elif favourite_tag == 'personal' %}🏠 Personal
+                                {% elif favourite_tag == 'ideas' %}💡 Ideas
+                                {% elif favourite_tag == 'important' %}⭐ Important
+                                {% else %}📌 General{% endif %}
+                            </strong> category.
+                        </p>
+                    {% endif %}
+                    <p class="text-muted mb-1">
+                        Total notes in your database: <strong>{{ total_notes }}</strong>.
+                        Active vs archived: <strong>{{ active_notes }}</strong> / <strong>{{ archived_notes }}</strong>.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="insight-card">
+                <h5><i class="fas fa-star"></i> Highlight from your notes</h5>
+                {% if last_note %}
+                    <p class="insight-label">Last updated note:</p>
+                    <p class="insight-note">{{ last_note.content }}</p>
+                {% else %}
+                    <p class="text-muted">As you write notes, your latest note and longest note will be highlighted here automatically.</p>
+                {% endif %}
+
+                {% if longest_note %}
+                    <p class="insight-label mt-3">One of your longest notes:</p>
+                    <p class="insight-note small">{{ longest_note.content }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const notesByDayLabels = {{ notes_by_day_labels|tojson }};
+    const notesByDayCounts = {{ notes_by_day_counts|tojson }};
+    const tagsLabels = {{ tag_chart_labels|tojson }};
+    const tagsCounts = {{ tag_chart_counts|tojson }};
+
+    const dayCtx = document.getElementById('notesByDayChart');
+    if (dayCtx) {
+        new Chart(dayCtx, {
+            type: 'line',
+            data: {
+                labels: notesByDayLabels,
+                datasets: [{
+                    label: 'Notes created',
+                    data: notesByDayCounts,
+                    fill: true,
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#6366f1'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    const tagsCtx = document.getElementById('tagsChart');
+    if (tagsCtx) {
+        new Chart(tagsCtx, {
+            type: 'doughnut',
+            data: {
+                labels: tagsLabels,
+                datasets: [{
+                    data: tagsCounts,
+                    backgroundColor: [
+                        '#6366f1',
+                        '#f59e0b',
+                        '#10b981',
+                        '#8b5cf6',
+                        '#ef4444'
+                    ]
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+
