@@ -10,7 +10,9 @@ def create_app():
 
     from .routes import main
     app.register_blueprint(main)
+    
+    app.secret_key = os.environ.get("SECRET_KEY")
 
     return app
 
-app.secret_key = os.environ.get("SECRET_KEY")
+    
