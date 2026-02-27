@@ -12,3 +12,5 @@ def create_app():
     app.register_blueprint(main)
 
     return app
+
+app.secret_key = os.environ.get("SECRET_KEY")
